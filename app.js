@@ -14,7 +14,7 @@
   const LS_PREFS = 'archivio.prefs.v1';
   const SYNC_DELAY = 2000;
   const POLL_MS = 30000;
-  const VIEWS = ['home', 'report', 'idee', 'impostazioni'];
+  const VIEWS = ['home', 'report', 'idee', 'eventi', 'impostazioni'];
 
   const COLORS = {
     Consulenza: '--c-consulenza', Lavoro: '--c-lavoro', Studio: '--c-studio', Ricerca: '--c-ricerca',
@@ -79,7 +79,7 @@
      Stato
      ========================================================= */
   let data = normalizeData(load(LS_DATA, null));
-  let cfg = Object.assign({ owner: '', repo: 'lavoro-dati', branch: 'main', path: 'data.json', token: '' }, load(LS_CFG, {}));
+  let cfg = Object.assign({ owner: '', repo: 'lavoro-dati', eventsRepo: 'radar-eventi', branch: 'main', path: 'data.json', token: '' }, load(LS_CFG, {}));
   const ui = Object.assign({ reportSort: 'updated', boardTab: 'Idea' }, load(LS_UI, {}));
   const prefs = Object.assign({ theme: 'auto', font: 'serif', size: 'm', width: 'narrow' }, load(LS_PREFS, {}));
 
@@ -178,8 +178,8 @@
     return new TextDecoder().decode(bytes);
   }
 
-  function gh(path, opts = {}) {
-    const url = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}${path ? '/' + path : ''}`;
+  function gh(path, opts = {}, repo = cfg.repo) {
+    const url = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(repo)}${path ? '/' + path : ''}`;
     return fetch(url, {
       ...opts,
       cache: 'no-store',
@@ -192,12 +192,12 @@
     });
   }
 
-  async function httpError(r) {
+  async function httpError(r, repo = cfg.repo) {
     let msg = '';
     try { msg = (await r.json()).message || ''; } catch { /* vuoto */ }
     if (r.status === 401) return new Error('Token non valido o scaduto');
     if (r.status === 403) return new Error('Il token non ha i permessi di scrittura (Contents: Read and write)');
-    if (r.status === 404) return new Error('Repository non trovato, oppure il token non ha accesso a questo repository');
+    if (r.status === 404) return new Error(`Repository «${repo}» non trovato, oppure il token non ha accesso a questo repository`);
     return new Error(`GitHub ${r.status}${msg ? ': ' + msg : ''}`);
   }
 
@@ -334,11 +334,12 @@
     $('side-cats').innerHTML = SECTIONS.report.kinds.map((k) =>
       `<a href="#/report?cat=${encodeURIComponent(k)}" class="${name === 'report' && cat === k ? 'active' : ''}" style="--cat:${colorOf(k)}"><i></i><span>${k}</span><em>${counts[k] || ''}</em></a>`).join('');
     document.querySelectorAll('[data-count]').forEach((n) => { n.textContent = alive(n.dataset.count).length || ''; });
+    $('count-eventi').textContent = evUpcoming().length || '';
   }
 
   function renderView() {
     if (!currentView || !el.writer.hidden) return;
-    ({ home: renderHome, report: renderReports, idee: renderIdeas, impostazioni: renderSettings })[currentView.name]();
+    ({ home: renderHome, report: renderReports, idee: renderIdeas, eventi: renderEventiView, impostazioni: renderSettings })[currentView.name]();
   }
 
   const renderSoon = debounce(() => { renderNav(); renderView(); }, 200);
@@ -382,6 +383,8 @@
     const recent = all.sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6);
     $('home-recent').innerHTML = recent.length ? recent.map(rowLink).join('')
       : '<p class="panel-empty">Ancora nessun documento. Inizia dal tuo primo report.</p>';
+
+    renderHomeEvents();
 
     let moving = ideas.filter((i) => i.kind === 'In valutazione' || i.kind === 'In sviluppo');
     if (!moving.length) moving = ideas.filter((i) => i.kind !== 'Archiviata');
@@ -522,6 +525,7 @@
     if (document.activeElement && document.activeElement.closest('#view-impostazioni .form')) return;
     $('c-owner').value = cfg.owner;
     $('c-repo').value = cfg.repo;
+    $('c-events-repo').value = cfg.eventsRepo;
     $('c-token').value = cfg.token;
     document.querySelectorAll('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === prefs.theme)));
     setStatus(syncState);
@@ -536,6 +540,7 @@
   async function connect() {
     cfg.owner = $('c-owner').value.trim();
     cfg.repo = $('c-repo').value.trim();
+    cfg.eventsRepo = $('c-events-repo').value.trim() || 'radar-eventi';
     cfg.token = $('c-token').value.trim();
     if (!connected()) { showResult('Compila utente, repository e token.', false); return; }
     saveCfg();
@@ -543,6 +548,8 @@
     await sync();
     if (lastError) showResult(lastError, false);
     else showResult('Collegato. I contenuti ora si sincronizzano in automatico.', true);
+    await fetchEventi(true);
+    if (!lastError && ev.error) showResult('Report e idee collegati. Eventi: ' + ev.error, false);
   }
 
   function disconnect() {
@@ -556,7 +563,7 @@
   }
 
   function connectLink() {
-    const payload = btoa(JSON.stringify({ o: cfg.owner, r: cfg.repo, b: cfg.branch, p: cfg.path, t: cfg.token }))
+    const payload = btoa(JSON.stringify({ o: cfg.owner, r: cfg.repo, e: cfg.eventsRepo, b: cfg.branch, p: cfg.path, t: cfg.token }))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     return location.origin + location.pathname + '#collega=' + payload;
   }
@@ -568,7 +575,7 @@
     try {
       const j = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
       if (!j.t || !j.o || !j.r) return false;
-      cfg = { owner: j.o, repo: j.r, branch: j.b || 'main', path: j.p || 'data.json', token: j.t };
+      cfg = { owner: j.o, repo: j.r, eventsRepo: j.e || 'radar-eventi', branch: j.b || 'main', path: j.p || 'data.json', token: j.t };
       saveCfg();
       return true;
     } catch { return false; }
@@ -626,6 +633,450 @@
     } catch (e) {
       toast('File non valido: ' + e.message);
     }
+  }
+
+  /* =========================================================
+     Radar Eventi
+     I dati stanno in data/eventi.json nel repository privato degli eventi.
+     La pagina li legge con il token; stato, contatti e follow-up si
+     modificano da qui e vengono salvati con un commit su quel file.
+     ========================================================= */
+  const LS_EVENTI = 'archivio.eventi.v1';
+  const EV_PATH = 'data/eventi.json';
+  const EV_CAT = {
+    finanza: { label: 'Finanza', color: '--c-lavoro' },
+    cyber: { label: 'Cyber', color: '--c-ricerca' },
+    networking_locale: { label: 'Networking locale', color: '--c-consulenza' },
+    fiera: { label: 'Fiera', color: '--c-studio' },
+    formazione: { label: 'Formazione', color: '--s-idea' },
+  };
+  const EV_PRIO = { alta: 'Priorità alta', media: 'Priorità media', bassa: 'Priorità bassa' };
+  const EV_STATO = { da_valutare: 'Da valutare', iscritto: 'Iscritto', fatto: 'Fatto', saltato: 'Saltato' };
+
+  const ev = Object.assign({ doc: null, sha: null, fetchedAt: 0 }, load(LS_EVENTI, {}), { error: '' });
+  const evOpen = new Set();
+  let evLoading = false;
+  const evFilter = Object.assign({ cat: '', prio: '', stato: '' }, load('archivio.evfiltri.v1', {}));
+  const eventsRepo = () => cfg.eventsRepo || 'radar-eventi';
+
+  // Differenza in giorni tra due date AAAA-MM-GG (b - a), senza problemi di fuso orario.
+  function giorni(a, b) {
+    const [y1, m1, d1] = a.split('-').map(Number);
+    const [y2, m2, d2] = b.split('-').map(Number);
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 864e5);
+  }
+  const dataIt = (iso, opts) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('it-IT', opts); };
+  const meseBreve = (iso) => dataIt(iso, { month: 'short' }).replace('.', '');
+
+  const evList = () => (ev.doc && Array.isArray(ev.doc.eventi) ? ev.doc.eventi : []);
+  const evPassato = (e) => e.data_fine < today();
+  function evUpcoming() {
+    return evList().filter((e) => !evPassato(e) && e.stato !== 'saltato').sort((a, b) => a.data_inizio.localeCompare(b.data_inizio));
+  }
+
+  async function leggiContenuto(j, repo) {
+    let b64 = j.content;
+    if (!b64 && j.sha) {
+      const rb = await gh(`git/blobs/${j.sha}`, {}, repo);
+      if (!rb.ok) throw await httpError(rb, repo);
+      b64 = (await rb.json()).content;
+    }
+    return fromB64(b64 || '');
+  }
+
+  async function scaricaEventi() {
+    const repo = eventsRepo();
+    const r = await gh(`contents/${EV_PATH}?ref=main&t=${Date.now()}`, {}, repo);
+    if (!r.ok) throw await httpError(r, repo);
+    const j = await r.json();
+    return { doc: JSON.parse(await leggiContenuto(j, repo)), sha: j.sha };
+  }
+
+  async function fetchEventi(force) {
+    if (!connected() || evLoading) { if (currentView && currentView.name === 'eventi') renderEventi(); return; }
+    if (!force && ev.doc && Date.now() - ev.fetchedAt < 60000) return;
+    evLoading = true;
+    if (currentView && currentView.name === 'eventi') renderEventi();
+    try {
+      const { doc, sha } = await scaricaEventi();
+      Object.assign(ev, { doc, sha, fetchedAt: Date.now(), error: '' });
+      store(LS_EVENTI, { doc, sha, fetchedAt: ev.fetchedAt });
+    } catch (e) {
+      ev.error = e.message || String(e);
+    } finally {
+      evLoading = false;
+      renderNav();
+      if (currentView && currentView.name === 'eventi') renderEventi();
+      if (currentView && currentView.name === 'home') renderHomeEvents();
+    }
+  }
+
+  function renderEventiView() {
+    renderEventi();
+    fetchEventi();
+  }
+
+  // Salva una modifica: subito in pagina, poi su GitHub rileggendo l'ultima versione
+  // del file (così non si sovrascrivono modifiche arrivate nel frattempo).
+  let evCoda = Promise.resolve();
+  function patchEvento(id, modifica, descrizione) {
+    const locale = evList().find((e) => e.id === id);
+    if (!locale) return;
+    modifica(locale);
+    store(LS_EVENTI, { doc: ev.doc, sha: ev.sha, fetchedAt: ev.fetchedAt });
+    renderEventi();
+    evCoda = evCoda.then(async () => {
+      const repo = eventsRepo();
+      for (let tentativo = 0; tentativo < 4; tentativo++) {
+        const { doc, sha } = await scaricaEventi();
+        const target = (doc.eventi || []).find((e) => e.id === id);
+        if (!target) throw new Error('evento non più presente nel repository');
+        modifica(target);
+        const body = {
+          message: `${descrizione}: ${id} (dal sito)`,
+          content: toB64(JSON.stringify(doc, null, 2) + '\n'),
+          sha, branch: 'main',
+        };
+        const r = await gh(`contents/${EV_PATH}`, { method: 'PUT', body: JSON.stringify(body) }, repo);
+        if (r.status === 409) continue;
+        if (!r.ok) throw await httpError(r, repo);
+        const pj = await r.json();
+        Object.assign(ev, { doc, sha: pj.content.sha, fetchedAt: Date.now(), error: '' });
+        store(LS_EVENTI, { doc, sha: ev.sha, fetchedAt: ev.fetchedAt });
+        renderEventi();
+        return;
+      }
+      throw new Error('troppe modifiche contemporanee, riprova');
+    }).catch((e) => {
+      toast('Modifica non salvata: ' + e.message);
+      fetchEventi(true);
+    });
+  }
+
+  /* Rendering */
+  function evCountdown(e) {
+    const t = today();
+    if (e.data_inizio <= t && t <= e.data_fine) return { txt: 'In corso', cls: 'now' };
+    const n = giorni(t, e.data_inizio);
+    if (n === 0) return { txt: 'Oggi', cls: 'now' };
+    if (n === 1) return { txt: 'Domani', cls: 'soon' };
+    return { txt: `Tra ${n} giorni`, cls: n <= 30 ? 'soon' : '' };
+  }
+
+  function evScadenza(e) {
+    if (!e.scadenza_iscrizione || evPassato(e) || ['iscritto', 'fatto', 'saltato'].includes(e.stato)) return '';
+    const n = giorni(today(), e.scadenza_iscrizione);
+    if (n < 0) return '<span class="ev-badge muted">Iscrizioni chiuse</span>';
+    if (n > 7) return '';
+    const quando = n === 0 ? 'oggi' : n === 1 ? 'domani' : `tra ${n} giorni`;
+    return `<span class="ev-badge danger">${icon('i-alert')}Iscrizioni chiudono ${quando}</span>`;
+  }
+
+  function evDateBlock(e) {
+    const a = e.data_inizio, b = e.data_fine;
+    const dayA = Number(a.slice(8)), dayB = Number(b.slice(8));
+    if (a === b) return `<b>${dayA}</b><span>${meseBreve(a)}</span><small>${dataIt(a, { weekday: 'short' }).replace('.', '')}</small>`;
+    if (a.slice(0, 7) === b.slice(0, 7)) return `<b>${dayA}–${dayB}</b><span>${meseBreve(a)}</span><small>${giorni(a, b) + 1} giorni</small>`;
+    return `<b>${dayA}</b><span>${meseBreve(a)} → ${dayB} ${meseBreve(b)}</span><small>${giorni(a, b) + 1} giorni</small>`;
+  }
+
+  function evQuando(e) {
+    const orario = e.orario_inizio + (e.orario_fine ? '–' + e.orario_fine : '');
+    const giornoLungo = (iso) => dataIt(iso, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const stessoMese = e.data_inizio.slice(0, 7) === e.data_fine.slice(0, 7);
+    const date = e.data_inizio === e.data_fine ? giornoLungo(e.data_inizio)
+      : stessoMese ? `dal ${Number(e.data_inizio.slice(8))} al ${dataIt(e.data_fine, { day: 'numeric', month: 'long', year: 'numeric' })}`
+      : `dal ${dataIt(e.data_inizio, { day: 'numeric', month: 'long' })} al ${dataIt(e.data_fine, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    return `${date} · ${orario}`;
+  }
+
+  // Accetta solo link http/https: i dati possono arrivare anche dalla scoperta automatica.
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? esc(u) : '#');
+
+  const linkContatto = (c) => {
+    const v = c.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return `<a href="mailto:${esc(v)}">${esc(v)}</a>`;
+    if (/^\+?[\d\s().-]{6,}$/.test(v)) return `<a href="tel:${esc(v.replace(/[^\d+]/g, ''))}">${esc(v)}</a>`;
+    if (/^https?:\/\//.test(v)) return `<a href="${safeUrl(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\/(www\.)?/, ''))}</a>`;
+    return esc(v);
+  };
+
+  function evCard(e) {
+    const cat = EV_CAT[e.categoria] || { label: e.categoria, color: '--muted' };
+    const passato = evPassato(e);
+    const open = evOpen.has(e.id);
+    const cd = passato ? null : evCountdown(e);
+    const fatti = e.follow_up.filter((f) => f.fatto).length;
+    const id = esc(e.id);
+    const incerti = JSON.stringify(e).includes('DA VERIFICARE');
+
+    const head = `
+      <button class="ev-head" type="button" data-ev-toggle="${id}" aria-expanded="${open}">
+        <span class="ev-date">${evDateBlock(e)}</span>
+        <span class="ev-main">
+          <span class="ev-top">
+            <span class="cat-label"><i></i>${esc(cat.label)}</span>
+            <span class="ev-prio ${esc(e.priorita)}">${esc(EV_PRIO[e.priorita] || e.priorita)}</span>
+          </span>
+          <span class="ev-name">${esc(e.nome)}</span>
+          <span class="ev-meta">${icon('i-pin')}${esc(e.citta)} <span class="dotsep">·</span> ${esc(e.orario_inizio)}${e.orario_fine ? '–' + esc(e.orario_fine) : ''} <span class="dotsep">·</span> ${esc(e.costo)}</span>
+          <span class="ev-badges">
+            ${cd ? `<span class="ev-badge count ${cd.cls}">${icon('i-clock')}${cd.txt}</span>` : ''}
+            <span class="ev-badge stato s-${esc(e.stato)}">${esc(EV_STATO[e.stato] || e.stato)}</span>
+            ${evScadenza(e)}
+            ${passato ? `<span class="ev-badge muted">${e.contatti_raccolti.length} contatti · follow-up ${fatti}/${e.follow_up.length}</span>` : ''}
+            ${incerti ? '<span class="ev-badge warn">Dati da verificare</span>' : ''}
+          </span>
+        </span>
+        <svg class="ev-chevron"><use href="#i-chevron"/></svg>
+      </button>`;
+
+    if (!open) return `<article class="ev-card${passato ? ' past' : ''}" style="--cat:var(${cat.color})">${head}</article>`;
+
+    const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.luogo + ', ' + e.indirizzo)}`;
+    const body = `
+      <div class="ev-body">
+        <div class="ev-actions">
+          <a class="btn" href="${safeUrl(e.link_ufficiale)}" target="_blank" rel="noopener">${icon('i-external')}Sito ufficiale</a>
+          ${e.link_iscrizione ? `<a class="btn primary" href="${safeUrl(e.link_iscrizione)}" target="_blank" rel="noopener">${icon('i-external')}${passato ? 'Pagina iscrizione' : 'Iscriviti / biglietti'}</a>` : ''}
+          <a class="btn" href="${maps}" target="_blank" rel="noopener">${icon('i-pin')}Mappa</a>
+        </div>
+
+        <dl class="ev-facts">
+          <dt>Quando</dt><dd>${esc(evQuando(e))}</dd>
+          <dt>Dove</dt><dd><strong>${esc(e.luogo)}</strong><br>${esc(e.indirizzo)}</dd>
+          <dt>Come arrivare</dt><dd>${esc(e.come_arrivare)}</dd>
+          <dt>Costo</dt><dd>${esc(e.costo)}</dd>
+          <dt>Iscrizione</dt><dd>${e.scadenza_iscrizione ? 'Entro ' + esc(dataIt(e.scadenza_iscrizione, { weekday: 'long', day: 'numeric', month: 'long' })) : 'Nessuna scadenza indicata'}</dd>
+          <dt>Organizzatore</dt><dd>${esc(e.organizzatore)}</dd>
+        </dl>
+
+        <div class="ev-why"><h4>Perché ci vado</h4><p>${esc(e.perche_ci_vado)}</p></div>
+
+        <div class="ev-cols">
+          <div><h4>${icon('i-users')}Chi incontrare</h4><ul class="ev-list">${e.chi_incontrare.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
+          <div><h4>${icon('i-arrow')}Opportunità successive</h4><ul class="ev-list">${e.opportunita_successive.map((x) => `<li>${esc(x)}</li>`).join('') || '<li class="muted">—</li>'}</ul></div>
+        </div>
+
+        <div class="ev-work">
+          <div class="ev-work-row">
+            <h4>Stato</h4>
+            <div class="segmented small">${Object.entries(EV_STATO).map(([k, v]) => `<button type="button" data-ev-stato="${id}" data-val="${k}" aria-pressed="${e.stato === k}">${v}</button>`).join('')}</div>
+          </div>
+
+          <div class="ev-work-block">
+            <h4>Contatti raccolti <span class="n">${e.contatti_raccolti.length}</span></h4>
+            <ul class="ev-contacts">${e.contatti_raccolti.map((c, i) => `
+              <li>
+                <div><strong>${esc(c.nome)}</strong>${[c.ruolo, c.azienda].filter(Boolean).length ? ` <span class="muted">· ${esc([c.ruolo, c.azienda].filter(Boolean).join(', '))}</span>` : ''}
+                  ${c.contatto ? `<div class="ev-contact-link">${linkContatto(c.contatto)}</div>` : ''}
+                  ${c.note ? `<div class="muted">${esc(c.note)}</div>` : ''}</div>
+                <button class="icon-btn" type="button" data-ev-del-contatto="${id}" data-i="${i}" aria-label="Rimuovi contatto">${icon('i-trash')}</button>
+              </li>`).join('') || '<li class="ev-empty">Nessun contatto ancora.</li>'}
+            </ul>
+            <details class="ev-add">
+              <summary>${icon('i-plus')}Aggiungi contatto</summary>
+              <form class="ev-form" data-ev-add-contatto="${id}">
+                <input name="nome" placeholder="Nome e cognome *" required autocomplete="off">
+                <input name="ruolo" placeholder="Ruolo (es. commercialista)" autocomplete="off">
+                <input name="azienda" placeholder="Studio / azienda" autocomplete="off">
+                <input name="contatto" placeholder="Telefono, email o LinkedIn" autocomplete="off">
+                <input name="note" class="wide" placeholder="Note: di cosa avete parlato" autocomplete="off">
+                <button class="btn primary" type="submit">Salva contatto</button>
+              </form>
+            </details>
+          </div>
+
+          <div class="ev-work-block">
+            <h4>Follow-up <span class="n">${fatti}/${e.follow_up.length}</span></h4>
+            <ul class="ev-followups">${e.follow_up.map((f, i) => `
+              <li class="${f.fatto ? 'done' : ''}">
+                <label><input type="checkbox" data-ev-fu="${id}" data-i="${i}" ${f.fatto ? 'checked' : ''}>
+                  <span>${esc(f.cosa)}${f.chi ? ` <span class="muted">· ${esc(f.chi)}</span>` : ''}${f.entro ? ` <span class="ev-due ${!f.fatto && f.entro < today() ? 'late' : ''}">entro ${esc(dataIt(f.entro, { day: 'numeric', month: 'short' }))}</span>` : ''}</span>
+                </label>
+                <button class="icon-btn" type="button" data-ev-del-fu="${id}" data-i="${i}" aria-label="Rimuovi follow-up">${icon('i-trash')}</button>
+              </li>`).join('') || '<li class="ev-empty">Nessun follow-up ancora.</li>'}
+            </ul>
+            <details class="ev-add">
+              <summary>${icon('i-plus')}Aggiungi follow-up</summary>
+              <form class="ev-form" data-ev-add-fu="${id}">
+                <input name="cosa" class="wide" placeholder="Cosa fare (es. mandare mail di ringraziamento) *" required autocomplete="off">
+                <input name="chi" placeholder="A chi" autocomplete="off">
+                <input name="entro" type="date" aria-label="Entro il">
+                <button class="btn primary" type="submit">Salva follow-up</button>
+              </form>
+            </details>
+          </div>
+        </div>
+      </div>`;
+    return `<article class="ev-card open${passato ? ' past' : ''}" style="--cat:var(${cat.color})">${head}${body}</article>`;
+  }
+
+  function renderEventi() {
+    const box = $('ev-content');
+    const conn = connected();
+    $('ev-connect').hidden = conn || Boolean(ev.doc);
+    $('ev-refresh').hidden = !conn;
+    $('ev-refresh').classList.toggle('loading', evLoading);
+
+    const tutti = evList();
+    const counts = {};
+    tutti.forEach((e) => { counts[e.categoria] = (counts[e.categoria] || 0) + 1; });
+    $('ev-cats').innerHTML = ['', ...Object.keys(EV_CAT)].map((k) =>
+      `<button type="button" data-ev-cat="${k}" aria-pressed="${evFilter.cat === k}" style="--dot:var(${k ? EV_CAT[k].color : '--muted'})">${k ? '<i></i>' : ''}${k ? EV_CAT[k].label : 'Tutte'}<span class="n">${k ? counts[k] || 0 : tutti.length}</span></button>`).join('');
+    $('ev-prio').value = evFilter.prio;
+    $('ev-stato').value = evFilter.stato;
+    $('ev-filters').hidden = !ev.doc;
+
+    if (!ev.doc) {
+      $('ev-summary').textContent = '';
+      box.innerHTML = !conn ? ''
+        : evLoading ? '<div class="ev-loading"><span></span><span></span><span></span></div>'
+        : `<div class="empty-state"><span class="quick-icon">${icon('i-alert')}</span><h3>Eventi non disponibili</h3><p>${esc(ev.error || 'Impossibile leggere gli eventi.')}</p><a class="btn" href="#/impostazioni">Controlla le impostazioni</a></div>`;
+      return;
+    }
+
+    const t = today();
+    const futuri = evUpcoming();
+    const daIscrivere = futuri.filter((e) => evScadenza(e).includes('danger')).length;
+    $('ev-summary').innerHTML = `${futuri.length} ${futuri.length === 1 ? 'evento in arrivo' : 'eventi in arrivo'}${daIscrivere ? ` · <b class="danger-text">${daIscrivere} con iscrizione in scadenza</b>` : ''}${ev.error ? ` · <span class="danger-text">non aggiornato: ${esc(ev.error)}</span>` : ''}`;
+
+    const filtrati = tutti.filter((e) => (!evFilter.cat || e.categoria === evFilter.cat) && (!evFilter.prio || e.priorita === evFilter.prio) && (!evFilter.stato || e.stato === evFilter.stato));
+    const prossimi = filtrati.filter((e) => !evPassato(e)).sort((a, b) => a.data_inizio.localeCompare(b.data_inizio) || a.nome.localeCompare(b.nome));
+    const passati = filtrati.filter(evPassato).sort((a, b) => b.data_inizio.localeCompare(a.data_inizio));
+    const entro30 = prossimi.filter((e) => giorni(t, e.data_inizio) <= 30);
+    const dopo = prossimi.filter((e) => giorni(t, e.data_inizio) > 30);
+
+    // Raggruppa gli eventi successivi per mese
+    const mesi = [];
+    dopo.forEach((e) => {
+      const key = e.data_inizio.slice(0, 7);
+      let g = mesi.find((m) => m.key === key);
+      if (!g) { g = { key, label: dataIt(e.data_inizio, { month: 'long', year: 'numeric' }), items: [] }; mesi.push(g); }
+      g.items.push(e);
+    });
+
+    let html = `
+      <section class="ev-group soon">
+        <header class="ev-group-head"><h2>Prossimi 30 giorni</h2><span class="n">${entro30.length}</span></header>
+        ${entro30.map(evCard).join('') || '<p class="ev-empty">Nessun evento nei prossimi 30 giorni con questi filtri.</p>'}
+      </section>`;
+    html += mesi.map((m) => `
+      <section class="ev-group">
+        <header class="ev-group-head"><h2>${esc(m.label.charAt(0).toUpperCase() + m.label.slice(1))}</h2><span class="n">${m.items.length}</span></header>
+        ${m.items.map(evCard).join('')}
+      </section>`).join('');
+    if (!prossimi.length && !passati.length) html += '<p class="ev-empty">Nessun evento corrisponde ai filtri.</p>';
+    html += `
+      <details class="ev-archive" ${passati.length ? '' : 'hidden'} ${evOpen.has('__archivio') ? 'open' : ''}>
+        <summary><h2>Archivio</h2><span class="n">${passati.length} ${passati.length === 1 ? 'evento passato' : 'eventi passati'}</span><svg class="ev-chevron"><use href="#i-chevron"/></svg></summary>
+        ${passati.map(evCard).join('')}
+      </details>`;
+    box.innerHTML = html;
+  }
+
+  function renderHomeEvents() {
+    const panel = $('home-events-panel');
+    const list = evUpcoming().filter((e) => giorni(today(), e.data_inizio) <= 45).slice(0, 4);
+    panel.hidden = !list.length;
+    $('home-events').innerHTML = list.map((e) => {
+      const cat = EV_CAT[e.categoria] || { color: '--muted' };
+      const cd = evCountdown(e);
+      return `<a class="row-link" href="#/eventi" data-ev-open="${esc(e.id)}" style="--cat:var(${cat.color})">
+        <span class="row-icon ev-mini">${evDateBlock(e).replace(/<small>.*?<\/small>/, '')}</span>
+        <span class="row-main">
+          <span class="row-title">${esc(e.nome)}</span>
+          <span class="row-meta">${esc(e.citta)} · ${cd.txt}${evScadenza(e) ? ' · <b class="danger-text">iscrizione in scadenza</b>' : ''}</span>
+        </span>
+        <svg class="chev"><use href="#i-arrow"/></svg>
+      </a>`;
+    }).join('');
+  }
+
+  function setupEventi() {
+    const view = $('view-eventi');
+    view.addEventListener('click', (e) => {
+      const tog = e.target.closest('[data-ev-toggle]');
+      if (tog) {
+        const id = tog.dataset.evToggle;
+        if (evOpen.has(id)) evOpen.delete(id); else evOpen.add(id);
+        renderEventi();
+        if (evOpen.has(id)) {
+          const card = view.querySelector(`[data-ev-toggle="${CSS.escape(id)}"]`);
+          if (card && card.getBoundingClientRect().top < 60) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+        return;
+      }
+      const cat = e.target.closest('[data-ev-cat]');
+      if (cat) { evFilter.cat = cat.dataset.evCat; store('archivio.evfiltri.v1', evFilter); renderEventi(); return; }
+      const st = e.target.closest('[data-ev-stato]');
+      if (st) {
+        const val = st.dataset.val;
+        patchEvento(st.dataset.evStato, (x) => { x.stato = val; }, `Stato ${EV_STATO[val].toLowerCase()}`);
+        return;
+      }
+      const delC = e.target.closest('[data-ev-del-contatto]');
+      if (delC) {
+        const x = evList().find((y) => y.id === delC.dataset.evDelContatto);
+        const c = x && x.contatti_raccolti[Number(delC.dataset.i)];
+        if (!c || !confirm(`Rimuovere il contatto “${c.nome}”?`)) return;
+        const snap = JSON.stringify(c);
+        patchEvento(x.id, (y) => { const i = y.contatti_raccolti.findIndex((z) => JSON.stringify(z) === snap); if (i >= 0) y.contatti_raccolti.splice(i, 1); }, 'Contatto rimosso');
+        return;
+      }
+      const delF = e.target.closest('[data-ev-del-fu]');
+      if (delF) {
+        const x = evList().find((y) => y.id === delF.dataset.evDelFu);
+        const f = x && x.follow_up[Number(delF.dataset.i)];
+        if (!f || !confirm(`Rimuovere il follow-up “${f.cosa}”?`)) return;
+        const snap = JSON.stringify(f);
+        patchEvento(x.id, (y) => { const i = y.follow_up.findIndex((z) => JSON.stringify(z) === snap); if (i >= 0) y.follow_up.splice(i, 1); }, 'Follow-up rimosso');
+      }
+    });
+    view.addEventListener('change', (e) => {
+      if (e.target.id === 'ev-prio' || e.target.id === 'ev-stato') {
+        evFilter[e.target.id === 'ev-prio' ? 'prio' : 'stato'] = e.target.value;
+        store('archivio.evfiltri.v1', evFilter);
+        renderEventi();
+        return;
+      }
+      const fu = e.target.closest('[data-ev-fu]');
+      if (fu) {
+        const x = evList().find((y) => y.id === fu.dataset.evFu);
+        const f = x && x.follow_up[Number(fu.dataset.i)];
+        if (!f) return;
+        const snap = JSON.stringify({ ...f, fatto: undefined });
+        const val = fu.checked;
+        patchEvento(x.id, (y) => { const z = y.follow_up.find((w) => JSON.stringify({ ...w, fatto: undefined }) === snap); if (z) z.fatto = val; }, val ? 'Follow-up fatto' : 'Follow-up riaperto');
+      }
+    });
+    view.addEventListener('submit', (e) => {
+      const form = e.target;
+      e.preventDefault();
+      const v = Object.fromEntries([...new FormData(form)].map(([k, val]) => [k, String(val).trim()]));
+      if (form.dataset.evAddContatto) {
+        if (!v.nome) return;
+        const c = { nome: v.nome };
+        ['ruolo', 'azienda', 'contatto', 'note'].forEach((k) => { if (v[k]) c[k] = v[k]; });
+        patchEvento(form.dataset.evAddContatto, (y) => { y.contatti_raccolti.push({ ...c }); }, 'Nuovo contatto');
+        toast('Contatto salvato');
+      } else if (form.dataset.evAddFu) {
+        if (!v.cosa) return;
+        const f = { cosa: v.cosa, chi: v.chi || '', entro: v.entro || null, fatto: false };
+        if (!f.chi) delete f.chi;
+        patchEvento(form.dataset.evAddFu, (y) => { y.follow_up.push({ ...f }); }, 'Nuovo follow-up');
+        toast('Follow-up salvato');
+      }
+    });
+    view.addEventListener('toggle', (e) => {
+      if (!e.target.classList || !e.target.classList.contains('ev-archive')) return;
+      if (e.target.open) evOpen.add('__archivio'); else evOpen.delete('__archivio');
+    }, true);
+    // Dalla Home: apre direttamente la scheda dell'evento
+    $('home-events').addEventListener('click', (e) => {
+      const a = e.target.closest('[data-ev-open]');
+      if (a) evOpen.add(a.dataset.evOpen);
+    });
   }
 
   /* =========================================================
@@ -1030,6 +1481,7 @@
       duplicate: () => { closeMenus(); duplicateCurrent(); },
       delete: () => { closeMenus(); deleteCurrent(); },
       connect, disconnect, qr: showQr, 'copy-link': copyLink,
+      'ev-refresh': () => fetchEventi(true),
       'export-backup': () => download(new Blob([serialize(data)], { type: 'application/json' }), `archivio-backup-${today()}.json`),
     };
     if (actions[act]) { e.preventDefault(); actions[act](); }
@@ -1063,6 +1515,7 @@
   $('idea-search').addEventListener('input', renderIdeas);
   $('f-import').addEventListener('change', (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
   setupBoardDnd();
+  setupEventi();
 
   // Titolo
   el.wTitle.addEventListener('input', () => {
@@ -1128,5 +1581,6 @@
   route();
   if (connected()) {
     sync().then(() => { if (justLinked) toast(lastError ? 'Collegamento non riuscito: ' + lastError : 'Dispositivo collegato ✓'); });
+    fetchEventi();
   }
 })();

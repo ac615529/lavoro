@@ -62,6 +62,14 @@
     <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 20.5h15"/></symbol>
     <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.8-9-7.8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 19V7.5A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 3.5V8h4.5M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20.5V16h-4.5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
   </defs>
 </svg>
@@ -83,6 +91,7 @@
       <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span><em data-count="report"></em></a>
       <div class="side-sub" id="side-cats"></div>
       <a href="#/idee" data-nav="idee"><svg><use href="#i-bulb"/></svg><span>Idee di business</span><em data-count="idea"></em></a>
+      <a href="#/eventi" data-nav="eventi"><svg><use href="#i-calendar"/></svg><span>Radar Eventi</span><em id="count-eventi"></em></a>
     </nav>
 
     <div class="side-foot">
@@ -96,7 +105,7 @@
 
     <!-- HOME -->
     <section class="view" id="view-home" hidden>
-      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
       <header class="hero">
         <p class="eyebrow" id="home-date"></p>
         <h1 id="home-greeting">Ciao</h1>
@@ -129,16 +138,22 @@
           <header class="panel-head"><h2>Continua a scrivere</h2><a href="#/report">Tutti i report</a></header>
           <div class="recent" id="home-recent"></div>
         </section>
-        <section class="panel">
-          <header class="panel-head"><h2>Idee in movimento</h2><a href="#/idee">Bacheca</a></header>
-          <div class="recent" id="home-ideas"></div>
-        </section>
+        <div class="home-side">
+          <section class="panel" id="home-events-panel" hidden>
+            <header class="panel-head"><h2>Prossimi eventi</h2><a href="#/eventi">Radar</a></header>
+            <div class="recent" id="home-events"></div>
+          </section>
+          <section class="panel">
+            <header class="panel-head"><h2>Idee in movimento</h2><a href="#/idee">Bacheca</a></header>
+            <div class="recent" id="home-ideas"></div>
+          </section>
+        </div>
       </div>
     </section>
 
     <!-- REPORT -->
     <section class="view" id="view-report" hidden>
-      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
       <header class="view-head">
         <div>
           <p class="eyebrow">Archivio</p>
@@ -162,7 +177,7 @@
 
     <!-- IDEE -->
     <section class="view" id="view-idee" hidden>
-      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
       <header class="view-head">
         <div>
           <p class="eyebrow">Bacheca</p>
@@ -177,9 +192,49 @@
       <div class="board" id="idea-board"></div>
     </section>
 
+    <!-- EVENTI -->
+    <section class="view" id="view-eventi" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow">Radar</p>
+          <h1>Eventi</h1>
+          <p class="ev-summary" id="ev-summary"></p>
+        </div>
+        <button class="btn" data-action="ev-refresh" id="ev-refresh"><svg><use href="#i-refresh"/></svg><span>Aggiorna</span></button>
+      </header>
+
+      <div class="connect-banner" id="ev-connect" hidden>
+        <svg><use href="#i-calendar"/></svg>
+        <div><strong>Gli eventi sono nel tuo repository privato</strong><span>Collega questo dispositivo con il token per vederli.</span></div>
+        <a class="btn" href="#/impostazioni">Collega</a>
+      </div>
+
+      <div class="ev-filters" id="ev-filters">
+        <div class="segmented" id="ev-cats"></div>
+        <div class="filters-right">
+          <select class="select" id="ev-prio" aria-label="Priorità">
+            <option value="">Tutte le priorità</option>
+            <option value="alta">Priorità alta</option>
+            <option value="media">Priorità media</option>
+            <option value="bassa">Priorità bassa</option>
+          </select>
+          <select class="select" id="ev-stato" aria-label="Stato">
+            <option value="">Tutti gli stati</option>
+            <option value="da_valutare">Da valutare</option>
+            <option value="iscritto">Iscritto</option>
+            <option value="fatto">Fatto</option>
+            <option value="saltato">Saltato</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ev-timeline" id="ev-content"></div>
+    </section>
+
     <!-- IMPOSTAZIONI -->
     <section class="view" id="view-impostazioni" hidden>
-      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
       <header class="view-head">
         <div>
           <p class="eyebrow">Preferenze</p>
@@ -197,7 +252,8 @@
             <div class="form">
               <label class="field"><span>Utente GitHub</span><input id="c-owner" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
               <label class="field"><span>Repository dati</span><input id="c-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-              <label class="field full"><span>Token di accesso</span><input id="c-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
+              <label class="field"><span>Repository eventi</span><input id="c-events-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+              <label class="field"><span>Token di accesso</span><input id="c-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
             </div>
             <div class="row">
               <button class="btn primary" data-action="connect">Salva e collega</button>
@@ -209,7 +265,7 @@
               <ol>
                 <li>Apri <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → nuovo token fine-grained</a>.</li>
                 <li>Nome <b>Archivio</b>, scadenza a scelta.</li>
-                <li><b>Repository access</b> → <i>Only select repositories</i> → <b>lavoro-dati</b>.</li>
+                <li><b>Repository access</b> → <i>Only select repositories</i> → <b>lavoro-dati</b> e <b>radar-eventi</b>.</li>
                 <li><b>Permissions</b> → <i>Contents</i> → <b>Read and write</b>.</li>
                 <li><b>Generate token</b>, copialo e incollalo qui sopra.</li>
               </ol>
@@ -268,7 +324,7 @@
   <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span></a>
   <button class="fab" data-action="new-menu" aria-label="Nuovo"><svg><use href="#i-plus"/></svg></button>
   <a href="#/idee" data-nav="idee"><svg><use href="#i-bulb"/></svg><span>Idee</span></a>
-  <a href="#/impostazioni" data-nav="impostazioni"><svg><use href="#i-gear"/></svg><span>Altro</span></a>
+  <a href="#/eventi" data-nav="eventi"><svg><use href="#i-calendar"/></svg><span>Eventi</span></a>
 </nav>
 
 <!-- ============ EDITOR ============ -->
