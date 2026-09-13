@@ -917,6 +917,7 @@
     const conn = connected();
     $('ev-connect').hidden = conn || Boolean(ev.doc);
     $('ev-refresh').hidden = !conn;
+    $('ev-ics').hidden = !conn;
     $('ev-refresh').classList.toggle('loading', evLoading);
 
     const tutti = evList();
@@ -973,6 +974,41 @@
         ${passati.map(evCard).join('')}
       </details>`;
     box.innerHTML = html;
+  }
+
+  // Scarica il calendario generato dalla build (branch "generati" del repository privato).
+  // Nessun indirizzo pubblico: il file passa solo attraverso il token.
+  async function scaricaCalendario() {
+    if (!connected()) { toast('Collega prima questo dispositivo nelle Impostazioni'); return; }
+    const btn = $('ev-ics');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+      const repo = eventsRepo();
+      const leggi = async (file) => {
+        const r = await gh(`contents/${file}?ref=generati&t=${Date.now()}`, {}, repo);
+        if (r.status === 404) throw new Error('calendario non ancora generato: controlla il workflow Build su GitHub');
+        if (!r.ok) throw await httpError(r, repo);
+        return leggiContenuto(await r.json(), repo);
+      };
+      const [ics, info] = await Promise.all([leggi('eventi.ics'), leggi('build.json').catch(() => '{}')]);
+      const meta = JSON.parse(info || '{}');
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios) {
+        // Su iPhone Safari apre direttamente la schermata "Aggiungi tutto" del Calendario.
+        location.href = URL.createObjectURL(blob);
+      } else {
+        download(blob, 'radar-eventi.ics');
+      }
+      const quando = meta.generato_il ? new Date(meta.generato_il).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      toast(`Calendario scaricato${meta.eventi_nel_calendario != null ? ` · ${meta.eventi_nel_calendario} eventi` : ''}${quando ? ` · aggiornato il ${quando}` : ''}`);
+    } catch (e) {
+      toast('Calendario non disponibile: ' + e.message);
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
   }
 
   function renderHomeEvents() {
@@ -1482,6 +1518,7 @@
       delete: () => { closeMenus(); deleteCurrent(); },
       connect, disconnect, qr: showQr, 'copy-link': copyLink,
       'ev-refresh': () => fetchEventi(true),
+      'ev-ics': scaricaCalendario,
       'export-backup': () => download(new Blob([serialize(data)], { type: 'application/json' }), `archivio-backup-${today()}.json`),
     };
     if (actions[act]) { e.preventDefault(); actions[act](); }

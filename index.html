@@ -201,7 +201,10 @@
           <h1>Eventi</h1>
           <p class="ev-summary" id="ev-summary"></p>
         </div>
-        <button class="btn" data-action="ev-refresh" id="ev-refresh"><svg><use href="#i-refresh"/></svg><span>Aggiorna</span></button>
+        <div class="head-actions">
+          <button class="btn" data-action="ev-ics" id="ev-ics" title="Scarica il calendario da importare nel telefono"><svg><use href="#i-download"/></svg><span>Calendario</span></button>
+          <button class="btn" data-action="ev-refresh" id="ev-refresh"><svg><use href="#i-refresh"/></svg><span>Aggiorna</span></button>
+        </div>
       </header>
 
       <div class="connect-banner" id="ev-connect" hidden>
