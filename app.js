@@ -14,7 +14,7 @@
   const LS_PREFS = 'archivio.prefs.v1';
   const SYNC_DELAY = 2000;
   const POLL_MS = 30000;
-  const VIEWS = ['home', 'report', 'idee', 'eventi', 'impostazioni'];
+  const VIEWS = ['home', 'report', 'idee', 'eventi', 'cyber', 'impostazioni'];
 
   const COLORS = {
     Consulenza: '--c-consulenza', Lavoro: '--c-lavoro', Studio: '--c-studio', Ricerca: '--c-ricerca',
@@ -79,7 +79,7 @@
      Stato
      ========================================================= */
   let data = normalizeData(load(LS_DATA, null));
-  let cfg = Object.assign({ owner: '', repo: 'lavoro-dati', eventsRepo: 'radar-eventi', branch: 'main', path: 'data.json', token: '' }, load(LS_CFG, {}));
+  let cfg = Object.assign({ owner: '', repo: 'lavoro-dati', eventsRepo: 'radar-eventi', cyberRepo: 'progetto-cyber', branch: 'main', path: 'data.json', token: '' }, load(LS_CFG, {}));
   const ui = Object.assign({ reportSort: 'updated', boardTab: 'Idea' }, load(LS_UI, {}));
   const prefs = Object.assign({ theme: 'auto', font: 'serif', size: 'm', width: 'narrow' }, load(LS_PREFS, {}));
 
@@ -301,7 +301,9 @@
   }
 
   function route() {
+    closeMenus();
     const r = parseHash();
+    if (r.name !== 'cyber' && window.Cyber) window.Cyber.chiudi();
     if (r.name === 'doc') {
       const it = data.items[r.id];
       if (!it || it.deleted) { location.replace('#/home'); return; }
@@ -335,11 +337,12 @@
       `<a href="#/report?cat=${encodeURIComponent(k)}" class="${name === 'report' && cat === k ? 'active' : ''}" style="--cat:${colorOf(k)}"><i></i><span>${k}</span><em>${counts[k] || ''}</em></a>`).join('');
     document.querySelectorAll('[data-count]').forEach((n) => { n.textContent = alive(n.dataset.count).length || ''; });
     $('count-eventi').textContent = evUpcoming().length || '';
+    if (window.Cyber) $('count-cyber').textContent = window.Cyber.contatore();
   }
 
   function renderView() {
     if (!currentView || !el.writer.hidden) return;
-    ({ home: renderHome, report: renderReports, idee: renderIdeas, eventi: renderEventiView, impostazioni: renderSettings })[currentView.name]();
+    ({ home: renderHome, report: renderReports, idee: renderIdeas, eventi: renderEventiView, cyber: () => window.Cyber.render(currentView), impostazioni: renderSettings })[currentView.name]();
   }
 
   const renderSoon = debounce(() => { renderNav(); renderView(); }, 200);
@@ -526,6 +529,7 @@
     $('c-owner').value = cfg.owner;
     $('c-repo').value = cfg.repo;
     $('c-events-repo').value = cfg.eventsRepo;
+    $('c-cyber-repo').value = cfg.cyberRepo;
     $('c-token').value = cfg.token;
     document.querySelectorAll('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === prefs.theme)));
     setStatus(syncState);
@@ -541,6 +545,7 @@
     cfg.owner = $('c-owner').value.trim();
     cfg.repo = $('c-repo').value.trim();
     cfg.eventsRepo = $('c-events-repo').value.trim() || 'radar-eventi';
+    cfg.cyberRepo = $('c-cyber-repo').value.trim() || 'progetto-cyber';
     cfg.token = $('c-token').value.trim();
     if (!connected()) { showResult('Compila utente, repository e token.', false); return; }
     saveCfg();
@@ -550,6 +555,8 @@
     else showResult('Collegato. I contenuti ora si sincronizzano in automatico.', true);
     await fetchEventi(true);
     if (!lastError && ev.error) showResult('Report e idee collegati. Eventi: ' + ev.error, false);
+    window.Cyber.reset();
+    await window.Cyber.carica(true);
   }
 
   function disconnect() {
@@ -563,7 +570,7 @@
   }
 
   function connectLink() {
-    const payload = btoa(JSON.stringify({ o: cfg.owner, r: cfg.repo, e: cfg.eventsRepo, b: cfg.branch, p: cfg.path, t: cfg.token }))
+    const payload = btoa(JSON.stringify({ o: cfg.owner, r: cfg.repo, e: cfg.eventsRepo, y: cfg.cyberRepo, b: cfg.branch, p: cfg.path, t: cfg.token }))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     return location.origin + location.pathname + '#collega=' + payload;
   }
@@ -575,7 +582,7 @@
     try {
       const j = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
       if (!j.t || !j.o || !j.r) return false;
-      cfg = { owner: j.o, repo: j.r, eventsRepo: j.e || 'radar-eventi', branch: j.b || 'main', path: j.p || 'data.json', token: j.t };
+      cfg = { owner: j.o, repo: j.r, eventsRepo: j.e || 'radar-eventi', cyberRepo: j.y || 'progetto-cyber', branch: j.b || 'main', path: j.p || 'data.json', token: j.t };
       saveCfg();
       return true;
     } catch { return false; }
@@ -1553,6 +1560,7 @@
   $('f-import').addEventListener('change', (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
   setupBoardDnd();
   setupEventi();
+  window.Cyber.setup();
 
   // Titolo
   el.wTitle.addEventListener('input', () => {
@@ -1608,6 +1616,14 @@
   });
 
   /* =========================================================
+     Funzioni condivise con cyber.js
+     ========================================================= */
+  window.Archivio = {
+    gh, httpError, fromB64, toB64, esc, icon, toast, load, store, isPhone, today,
+    connected, cfg: () => cfg,
+  };
+
+  /* =========================================================
      Avvio
      ========================================================= */
   const justLinked = readConnectLink();
@@ -1619,5 +1635,6 @@
   if (connected()) {
     sync().then(() => { if (justLinked) toast(lastError ? 'Collegamento non riuscito: ' + lastError : 'Dispositivo collegato ✓'); });
     fetchEventi();
+    window.Cyber.carica().then(() => renderNav());
   }
 })();

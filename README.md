@@ -4,6 +4,7 @@ Sito personale per raccogliere:
 
 - **Report** di consulenza, lavoro, studio e ricerca
 - **Idee di business**
+- **Progetto cyber** (`#/cyber`): conversazioni con imprenditori, lette dal repository privato `progetto-cyber`
 - **Radar Eventi** (`#/eventi` o `/eventi`): eventi professionali letti dal repository privato `radar-eventi`
 
 Funziona da PC e da telefono (si può aggiungere alla schermata Home come un'app).
@@ -23,6 +24,6 @@ Questo repository contiene solo il codice del sito (pubblico, senza dati). Senza
 ## Primo collegamento
 
 1. Crea un token *fine-grained* su <https://github.com/settings/personal-access-tokens/new>
-   con accesso ai soli repository `lavoro-dati` e `radar-eventi` e permesso **Contents: Read and write**.
+   con accesso ai soli repository `lavoro-dati`, `radar-eventi` e `progetto-cyber` e permesso **Contents: Read and write**.
 2. Apri il sito dal PC → **Impostazioni** → incolla il token → **Salva e collega**.
 3. Sempre in Impostazioni → **Mostra codice QR** → inquadralo con il telefono.
