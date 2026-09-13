@@ -14,10 +14,11 @@
   const LS_PREFS = 'archivio.prefs.v1';
   const SYNC_DELAY = 2000;
   const POLL_MS = 30000;
-  const VIEWS = ['home', 'report', 'idee', 'eventi', 'cyber', 'impostazioni'];
+  const VIEWS = ['home', 'giornata', 'report', 'todo', 'idee', 'eventi', 'cyber', 'impostazioni'];
 
   const COLORS = {
     Consulenza: '--c-consulenza', Lavoro: '--c-lavoro', Studio: '--c-studio', Ricerca: '--c-ricerca',
+    Report: '--c-ricerca', Nota: '--c-consulenza', Analisi: '--c-lavoro', Piano: '--c-studio',
     Idea: '--s-idea', 'In valutazione': '--s-valutazione', 'In sviluppo': '--s-sviluppo', Lanciata: '--s-lanciata', Archiviata: '--s-archiviata',
   };
   const colorOf = (kind) => `var(${COLORS[kind] || '--muted'})`;
@@ -27,13 +28,20 @@
       label: 'Report', route: '#/report', icon: 'i-doc',
       kinds: ['Consulenza', 'Lavoro', 'Studio', 'Ricerca'],
       kindLabel: 'Tipo', whoLabel: 'Cliente / progetto',
-      template: '<h2>Obiettivo</h2><p><br></p><h2>Contesto</h2><p><br></p><h2>Analisi</h2><p><br></p><h2>Conclusioni</h2><p><br></p><h2>Prossimi passi</h2><p><br></p>',
+      template: '', // pagina bianca: si scrive liberamente
     },
     idea: {
       label: 'Idee di business', route: '#/idee', icon: 'i-bulb',
       kinds: ['Idea', 'In valutazione', 'In sviluppo', 'Lanciata', 'Archiviata'],
       kindLabel: 'Stato', whoLabel: 'Settore / mercato',
       template: '<h2>Problema</h2><p><br></p><h2>Soluzione</h2><p><br></p><h2>Clienti target</h2><p><br></p><h2>Modello di ricavo</h2><p><br></p><h2>Concorrenti</h2><p><br></p><h2>Prossimi passi</h2><ol><li data-list="unchecked"><br></li></ol>',
+    },
+    // Documenti del progetto cyber (report liberi e documenti delle startup): stanno in spazio.js
+    cyberdoc: {
+      label: 'Progetto cyber', route: '#/cyber/report', icon: 'i-shield',
+      kinds: ['Report', 'Nota', 'Analisi', 'Piano'],
+      kindLabel: 'Tipo', whoLabel: 'Riferimento',
+      template: '',
     },
   };
 
@@ -270,21 +278,30 @@
 
   function setStatus(state) {
     let text;
+    syncState = state || '';
+    // L'indicatore mostra anche lo stato dell'agenda e dello spazio cyber (spazio.js)
+    const extra = window.Spazio ? window.Spazio.statoSync() : { stato: '' };
+    let err = lastError;
+    if (state === 'ok' || !state) {
+      if (extra.stato === 'error') { state = 'error'; err = extra.errore; }
+      else if (extra.stato) state = extra.stato;
+    }
     if (!connected()) { state = 'local'; text = 'Solo su questo dispositivo'; }
     else if (state === 'ok') text = 'Sincronizzato';
     else if (state === 'pending') text = 'Salvataggio…';
     else if (state === 'offline') text = 'Offline · salvato qui';
     else if (state === 'error') text = 'Errore di sincronizzazione';
     else text = 'Connessione…';
-    syncState = state || '';
+    if (!connected()) syncState = 'local';
+    const shown = state || '';
     document.querySelectorAll('[data-sync]').forEach((n) => {
-      n.dataset.state = syncState;
+      n.dataset.state = shown;
       n.querySelector('span').textContent = text;
-      n.title = state === 'error' ? lastError : text;
+      n.title = state === 'error' ? err : text;
     });
     document.querySelectorAll('[data-sync-detail]').forEach((n) => {
-      n.dataset.state = syncState;
-      n.innerHTML = `<i></i><span>${esc(state === 'error' ? 'Errore: ' + lastError : text)}</span>`;
+      n.dataset.state = shown;
+      n.innerHTML = `<i></i><span>${esc(state === 'error' ? 'Errore: ' + err : text)}</span>`;
     });
   }
 
@@ -305,7 +322,7 @@
     const r = parseHash();
     if (r.name !== 'cyber' && window.Cyber) window.Cyber.chiudi();
     if (r.name === 'doc') {
-      const it = data.items[r.id];
+      const it = findDoc(r.id);
       if (!it || it.deleted) { location.replace('#/home'); return; }
       writerFromApp = Boolean(prevRoute && prevRoute.name !== 'doc');
       openWriter(it);
@@ -338,14 +355,26 @@
     document.querySelectorAll('[data-count]').forEach((n) => { n.textContent = alive(n.dataset.count).length || ''; });
     $('count-eventi').textContent = evUpcoming().length || '';
     if (window.Cyber) $('count-cyber').textContent = window.Cyber.contatore();
+    const sp = window.Spazio.contatori();
+    $('count-giornata').textContent = sp.giornata;
+    $('count-todo').textContent = sp.todo;
   }
 
   function renderView() {
     if (!currentView || !el.writer.hidden) return;
-    ({ home: renderHome, report: renderReports, idee: renderIdeas, eventi: renderEventiView, cyber: () => window.Cyber.render(currentView), impostazioni: renderSettings })[currentView.name]();
+    ({
+      home: renderHome, giornata: () => window.Spazio.renderGiornata(currentView), report: renderReports,
+      todo: () => window.Spazio.renderTodoView(currentView), idee: renderIdeas, eventi: renderEventiView,
+      cyber: () => window.Cyber.render(currentView), impostazioni: renderSettings,
+    })[currentView.name]();
   }
 
   const renderSoon = debounce(() => { renderNav(); renderView(); }, 200);
+  const renderNavSoon = debounce(renderNav, 300);
+
+  // I documenti possono stare in data.json (report, idee) o nello spazio cyber (spazio.js).
+  const findDoc = (id) => data.items[id] || (window.Spazio && window.Spazio.doc(id)) || null;
+  const isSpazioDoc = (it) => Boolean(it && it.section === 'cyberdoc' && window.Spazio.possiede(it.id));
 
   /* =========================================================
      Home
@@ -388,6 +417,7 @@
       : '<p class="panel-empty">Ancora nessun documento. Inizia dal tuo primo report.</p>';
 
     renderHomeEvents();
+    window.Spazio.renderHome($('home-giornata'));
 
     let moving = ideas.filter((i) => i.kind === 'In valutazione' || i.kind === 'In sviluppo');
     if (!moving.length) moving = ideas.filter((i) => i.kind !== 'Archiviata');
@@ -556,6 +586,7 @@
     await fetchEventi(true);
     if (!lastError && ev.error) showResult('Report e idee collegati. Eventi: ' + ev.error, false);
     window.Cyber.reset();
+    window.Spazio.avvia();
     await window.Cyber.carica(true);
   }
 
@@ -1126,7 +1157,7 @@
      Editor
      ========================================================= */
   let quill = null, openId = null, loadedAt = 0, lastInputAt = 0, focusTitleOnOpen = false;
-  const cur = () => (openId && data.items[openId]) || null;
+  const cur = () => (openId && findDoc(openId)) || null;
 
   function ensureQuill() {
     if (quill) return quill;
@@ -1240,7 +1271,7 @@
     quill.setContents(quill.clipboard.convert({ html: toHtml(it.body) }), 'silent');
     if (!keepScroll) { quill.history.clear(); el.wScroll.scrollTop = 0; } else el.wScroll.scrollTop = scroll;
     loadedAt = it.updatedAt;
-    $('w-section').textContent = s.label;
+    $('w-section').textContent = isSpazioDoc(it) ? window.Spazio.etichettaDoc(it) : s.label;
     $('p-kind-label').textContent = s.kindLabel;
     $('p-who-label').textContent = s.whoLabel;
     $('p-kind').innerHTML = s.kinds.map((k) => `<option>${esc(k)}</option>`).join('');
@@ -1296,6 +1327,7 @@
     lastInputAt = Date.now();
     it.updatedAt = lastInputAt;
     loadedAt = it.updatedAt;
+    if (isSpazioDoc(it)) { window.Spazio.salvata(it); return; }
     saveDataSoon();
     scheduleSync();
   }
@@ -1332,7 +1364,7 @@
     if (writerFromApp && history.length > 1) history.back();
     else {
       const it = cur();
-      location.hash = it && it.section === 'idea' ? '#/idee' : '#/report';
+      location.hash = isSpazioDoc(it) ? window.Spazio.indietroDoc(it) : it && it.section === 'idea' ? '#/idee' : '#/report';
     }
   }
 
@@ -1340,7 +1372,8 @@
     const it = cur();
     // Un documento appena creato e mai toccato non resta in archivio.
     if (it && !it.deleted && it.createdAt === it.updatedAt) {
-      data.items[it.id] = normalizeItem({ ...it, deleted: true, updatedAt: Date.now() });
+      if (isSpazioDoc(it)) window.Spazio.elimina(it.id);
+      else data.items[it.id] = normalizeItem({ ...it, deleted: true, updatedAt: Date.now() });
     }
     saveData();
     if (syncState === 'pending') sync();
@@ -1369,6 +1402,11 @@
   function duplicateCurrent() {
     const it = cur();
     if (!it) return;
+    if (isSpazioDoc(it)) {
+      location.replace('#/doc/' + encodeURIComponent(window.Spazio.duplicaDoc(it)));
+      toast('Documento duplicato');
+      return;
+    }
     const now = Date.now();
     const copy = normalizeItem({ ...it, id: uid(), title: (it.title || 'Senza titolo') + ' (copia)', createdAt: now, updatedAt: now + 1 });
     data.items[copy.id] = copy;
@@ -1382,6 +1420,13 @@
     const it = cur();
     if (!it) return;
     if (!confirm(`Eliminare “${it.title.trim() || 'Senza titolo'}”?`)) return;
+    if (isSpazioDoc(it)) {
+      const back = window.Spazio.indietroDoc(it);
+      window.Spazio.elimina(it.id);
+      location.replace(back);
+      toast('Eliminato. È recuperabile dalla cronologia su GitHub.');
+      return;
+    }
     const section = it.section;
     data.items[it.id] = normalizeItem({ ...it, deleted: true, updatedAt: Date.now() });
     saveData();
@@ -1512,6 +1557,7 @@
     const actions = {
       'new-menu': () => openMenu('menu-new', a),
       new: () => { closeMenus(); createItem(a.dataset.section, a.dataset.kind); },
+      'new-todo': () => { closeMenus(); window.Spazio.nuovaListaReport(); },
       'close-writer': closeWriter,
       'typo-menu': () => openMenu('menu-typo', a),
       'more-menu': () => openMenu('menu-more', a),
@@ -1549,6 +1595,7 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       saveData();
+      window.Spazio.sincronizza();
       if (connected()) sync().then(() => toast(lastError ? 'Salvato sul dispositivo · ' + lastError : 'Salvato e sincronizzato'));
       else toast('Salvato sul dispositivo');
     }
@@ -1561,6 +1608,7 @@
   setupBoardDnd();
   setupEventi();
   window.Cyber.setup();
+  window.Spazio.setup();
 
   // Titolo
   el.wTitle.addEventListener('input', () => {
@@ -1601,6 +1649,7 @@
   window.addEventListener('beforeunload', (e) => {
     saveData();
     if (connected() && syncState === 'pending') { sync(); e.preventDefault(); e.returnValue = ''; }
+    else if (connected() && window.Spazio.haModifichePendenti()) { window.Spazio.sincronizza(); e.preventDefault(); e.returnValue = ''; }
   });
   setInterval(() => {
     if (document.visibilityState === 'visible' && !syncing && syncState !== 'pending') sync();
@@ -1621,6 +1670,10 @@
   window.Archivio = {
     gh, httpError, fromB64, toB64, esc, icon, toast, load, store, isPhone, today,
     connected, cfg: () => cfg,
+    // usate da spazio.js
+    info, fmtDate, relTime, download, openMenu, closeMenus, renderSoon, renderNavSoon, renderView, refreshWriterIfStale,
+    aggiornaStato: () => setStatus(syncState),
+    apriDocumento: (id) => { focusTitleOnOpen = true; location.hash = '#/doc/' + encodeURIComponent(id); },
   };
 
   /* =========================================================
@@ -1636,5 +1689,6 @@
     sync().then(() => { if (justLinked) toast(lastError ? 'Collegamento non riuscito: ' + lastError : 'Dispositivo collegato ✓'); });
     fetchEventi();
     window.Cyber.carica().then(() => renderNav());
+    window.Spazio.avvia();
   }
 })();

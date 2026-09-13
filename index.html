@@ -72,6 +72,10 @@
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.3l2 2.5h8.7A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4v16"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 21h4"/></symbol>
   </defs>
 </svg>
 
@@ -89,8 +93,10 @@
 
     <nav class="side-nav">
       <a href="#/home" data-nav="home"><svg><use href="#i-home"/></svg><span>Home</span></a>
+      <a href="#/giornata" data-nav="giornata"><svg><use href="#i-sun"/></svg><span>Giornata</span><em id="count-giornata" title="Appunti ancora da fare oggi"></em></a>
       <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span><em data-count="report"></em></a>
       <div class="side-sub" id="side-cats"></div>
+      <div class="side-sub side-sub-todo"><a href="#/todo" data-nav="todo"><svg><use href="#i-check"/></svg><span>Liste to-do</span><em id="count-todo"></em></a></div>
       <a href="#/idee" data-nav="idee"><svg><use href="#i-bulb"/></svg><span>Idee di business</span><em data-count="idea"></em></a>
       <a href="#/eventi" data-nav="eventi"><svg><use href="#i-calendar"/></svg><span>Radar Eventi</span><em id="count-eventi"></em></a>
       <a href="#/cyber" data-nav="cyber"><svg><use href="#i-shield"/></svg><span>Progetto cyber</span><em id="count-cyber" title="Conversazioni del mese"></em></a>
@@ -126,6 +132,11 @@
           <span class="quick-text"><strong>Nuovo report</strong><span>Consulenza, lavoro, studio o ricerca</span></span>
           <svg class="quick-arrow"><use href="#i-arrow"/></svg>
         </button>
+        <a class="quick-card" href="#/giornata?nuovo=1">
+          <span class="quick-icon day"><svg><use href="#i-sun"/></svg></span>
+          <span class="quick-text"><strong>Appunto veloce</strong><span>Organizza la giornata</span></span>
+          <svg class="quick-arrow"><use href="#i-arrow"/></svg>
+        </a>
         <button class="quick-card" data-action="new" data-section="idea">
           <span class="quick-icon idea"><svg><use href="#i-bulb"/></svg></span>
           <span class="quick-text"><strong>Nuova idea di business</strong><span>Annota subito, sviluppala dopo</span></span>
@@ -141,6 +152,10 @@
           <div class="recent" id="home-recent"></div>
         </section>
         <div class="home-side">
+          <section class="panel">
+            <header class="panel-head"><h2>Oggi</h2><a href="#/giornata">Giornata</a></header>
+            <div id="home-giornata"></div>
+          </section>
           <section class="panel" id="home-events-panel" hidden>
             <header class="panel-head"><h2>Prossimi eventi</h2><a href="#/eventi">Radar</a></header>
             <div class="recent" id="home-events"></div>
@@ -161,7 +176,10 @@
           <p class="eyebrow">Archivio</p>
           <h1>Report</h1>
         </div>
-        <button class="btn primary hide-phone" data-action="new" data-section="report"><svg><use href="#i-plus"/></svg><span>Nuovo report</span></button>
+        <div class="head-actions report-actions">
+          <a class="btn" href="#/todo"><svg><use href="#i-check"/></svg><span>Liste to-do</span></a>
+          <button class="btn primary hide-phone" data-action="new" data-section="report"><svg><use href="#i-plus"/></svg><span>Nuovo report</span></button>
+        </div>
       </header>
       <div class="filters">
         <div class="segmented" id="report-cats" role="tablist"></div>
@@ -175,6 +193,33 @@
         </div>
       </div>
       <div class="doc-grid" id="report-grid"></div>
+    </section>
+
+    <!-- GIORNATA -->
+    <section class="view" id="view-giornata" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow">Organizzazione</p>
+          <h1>Giornata</h1>
+        </div>
+      </header>
+      <div id="gi-content"></div>
+    </section>
+
+    <!-- LISTE TO-DO (report) -->
+    <section class="view" id="view-todo" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="mobile-top-right"><div class="sync" data-sync><i></i><span></span></div><a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni"><svg><use href="#i-gear"/></svg></a></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow"><a href="#/report">Report</a></p>
+          <h1 id="td-title">Liste to-do</h1>
+        </div>
+        <div class="head-actions" id="td-head-actions">
+          <button class="btn primary" data-action="new-todo"><svg><use href="#i-plus"/></svg><span>Nuova lista</span></button>
+        </div>
+      </header>
+      <div id="td-content"></div>
     </section>
 
     <!-- IDEE -->
@@ -243,9 +288,10 @@
       <header class="view-head">
         <div>
           <p class="eyebrow">Progetto cyber</p>
-          <h1>Conversazioni</h1>
+          <h1 id="cy-title">Startup</h1>
         </div>
       </header>
+      <nav class="segmented sp-tabs" id="cy-tabs" aria-label="Sezioni del progetto"></nav>
       <div id="cy-content"></div>
     </section>
 
@@ -339,8 +385,9 @@
 <!-- ============ TAB BAR (telefono) ============ -->
 <nav class="tabbar">
   <a href="#/home" data-nav="home"><svg><use href="#i-home"/></svg><span>Home</span></a>
-  <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span></a>
+  <a href="#/giornata" data-nav="giornata"><svg><use href="#i-sun"/></svg><span>Giornata</span></a>
   <button class="fab" data-action="new-menu" aria-label="Nuovo"><svg><use href="#i-plus"/></svg></button>
+  <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span></a>
   <a href="#/cyber" data-nav="cyber"><svg><use href="#i-shield"/></svg><span>Cyber</span></a>
   <a href="#/eventi" data-nav="eventi"><svg><use href="#i-calendar"/></svg><span>Eventi</span></a>
 </nav>
@@ -434,6 +481,10 @@
 
 <div class="menu sheet" id="menu-new" hidden role="menu">
   <p class="menu-title">Crea nuovo</p>
+  <a class="menu-item big" href="#/giornata?nuovo=1">
+    <span class="quick-icon day"><svg><use href="#i-sun"/></svg></span>
+    <span><strong>Appunto veloce</strong><small>Per organizzare oggi o domani</small></span>
+  </a>
   <a class="menu-item big" href="#/cyber/conversazioni/nuova">
     <span class="quick-icon"><svg><use href="#i-users"/></svg></span>
     <span><strong>Conversazione</strong><small>Progetto cyber, due minuti dopo l’appuntamento</small></span>
@@ -446,7 +497,17 @@
     <span class="quick-icon idea"><svg><use href="#i-bulb"/></svg></span>
     <span><strong>Idea di business</strong><small>Problema, soluzione, mercato</small></span>
   </button>
+  <button class="menu-item big" data-action="new-todo">
+    <span class="quick-icon"><svg><use href="#i-check"/></svg></span>
+    <span><strong>Lista to-do</strong><small>Cose da fare, da spuntare</small></span>
+  </button>
+  <a class="menu-item big" href="#/cyber/startup">
+    <span class="quick-icon cyber"><svg><use href="#i-folder"/></svg></span>
+    <span><strong>Startup</strong><small>Cartelle con documenti, griglie di prezzi e costi, to-do</small></span>
+  </a>
 </div>
+
+<div class="menu sheet sp-menu" id="sp-menu" hidden role="menu"></div>
 
 <div class="menu sheet" id="menu-more" hidden role="menu">
   <p class="menu-title">Documento</p>
@@ -488,6 +549,7 @@
 
 <script src="vendor/quill.js"></script>
 <script src="cyber.js"></script>
+<script src="spazio.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

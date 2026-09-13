@@ -149,11 +149,29 @@
 
   /* --------------------------- Rendering --------------------------- */
 
+  const SCHEDE = [
+    ['startup', 'Startup', 'i-folder'],
+    ['report', 'Report', 'i-doc'],
+    ['todo', 'To-do', 'i-check'],
+    ['conversazioni', 'Conversazioni', 'i-users'],
+  ];
+
   function render(view) {
     const box = $('cy-content');
     const parti = location.hash.replace(/^#\/?/, '').split('?')[0].split('/').map(decodeURIComponent);
-    // parti: ['cyber', 'conversazioni', <file>|'nuova', 'modifica']
-    if (parti.length === 1 || !parti[1]) { location.replace('#/cyber/conversazioni'); return; }
+    // parti: ['cyber', 'conversazioni', <file>|'nuova', 'modifica']  ·  ['cyber', 'startup'|'report'|'todo'|'file', <id>]
+    if (parti.length === 1 || !parti[1]) { location.replace('#/cyber/startup'); return; }
+
+    // Startup, report liberi e to-do stanno in spazio.js
+    const scheda = parti[1] === 'conversazioni' ? 'conversazioni' : window.Spazio.schedaCyber(parti);
+    $('cy-tabs').innerHTML = SCHEDE.map(([k, l, i]) => `<a href="#/cyber/${k}" aria-pressed="${scheda === k}">${icon(i)}${l}</a>`).join('');
+    $('cy-title').textContent = (SCHEDE.find((s) => s[0] === scheda) || SCHEDE[0])[1];
+    if (parti[1] !== 'conversazioni') {
+      if (!['startup', 'report', 'todo', 'file'].includes(parti[1])) { location.replace('#/cyber/startup'); return; }
+      chiudiGuida();
+      window.Spazio.renderCyber(parti, box);
+      return;
+    }
 
     if (!A().connected()) {
       box.innerHTML = `<div class="connect-banner"><svg><use href="#i-shield"/></svg>
