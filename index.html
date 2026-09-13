@@ -2,10 +2,11 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Archivio Lavoro</title>
   <meta name="description" content="Report di consulenza, lavoro, studio e ricerca, e idee di business.">
-  <meta name="theme-color" content="#1f4e46">
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141615" media="(prefers-color-scheme: dark)">
   <meta name="robots" content="noindex, nofollow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -14,166 +15,397 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="vendor/quill.core.css">
   <link rel="stylesheet" href="style.css">
+  <script>
+    try { var t = JSON.parse(localStorage.getItem('archivio.prefs.v1') || '{}').theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
 </head>
-<body data-section="report" data-screen="list">
+<body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14 2.5V7.5h5M9 12.5h7M9 16.5h5"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.7v.5h6V16c0-.7.3-1.3.8-1.7A6.5 6.5 0 0 0 12 2.5z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3.5 6h17M9 6V3.5h6V6M5.5 6l1 15h11l1-15M10 10.5v6M14 10.5v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14 2.5V7.5h5M12 11v6M9.5 14.5 12 17l2.5-2.5"/></symbol>
+    <symbol id="i-word" viewBox="0 0 24 24"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14 2.5V7.5h5M8.5 11.5l1.3 5.5 1.7-4 1.7 4 1.3-5.5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+    <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 4.5h6a3.75 3.75 0 0 1 0 7.5H7zM7 12h7a4 4 0 0 1 0 8H7z"/></symbol>
+    <symbol id="i-italic" viewBox="0 0 24 24"><path d="M14 4.5h5M5 19.5h5M15.5 4.5l-7 15"/></symbol>
+    <symbol id="i-underline" viewBox="0 0 24 24"><path d="M7 4v7a5 5 0 0 0 10 0V4M5 20.5h14"/></symbol>
+    <symbol id="i-strike" viewBox="0 0 24 24"><path d="M4 12h16M16.5 7.5c-.6-1.8-2.3-3-4.5-3-2.6 0-4.5 1.5-4.5 3.5 0 1.3.8 2.3 2.2 3M8 16.5c.6 1.9 2.5 3 4.5 3 2.6 0 4.5-1.4 4.5-3.5 0-.6-.1-1.1-.4-1.5"/></symbol>
+    <symbol id="i-mark" viewBox="0 0 24 24"><path d="m9 15-3 3h5l1.5-1.5M9 15l7.5-10.5 3.5 3L12.5 16.5z"/><path d="M4 21h16"/></symbol>
+    <symbol id="i-ul" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+    <symbol id="i-ol" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 4.5h1.5V9M3.5 9h3M3.5 14.5a1.5 1.5 0 0 1 3 .3c0 1.2-3 2.2-3 3.7h3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="6" rx="1.3"/><path d="m4.5 7 1 1 2-2M13 7h8M3 15.5h6M13 17h8"/><rect x="3" y="14" width="6" height="6" rx="1.3"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M4 6h16M8 11h12M8 15h12M8 19h9M4 10.5v9"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
+    <symbol id="i-hr" viewBox="0 0 24 24"><path d="M3 12h18M7 7h10M7 17h10" /></symbol>
+    <symbol id="i-clean" viewBox="0 0 24 24"><path d="M5 5h11M10.5 5 8 19M14 14l6 6M20 14l-6 6"/></symbol>
+    <symbol id="i-center" viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.5a4.5 4.5 0 0 1-.5 10z"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 20.5h15"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.8-9-7.8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <!-- ============ SIDEBAR (PC) ============ -->
   <aside class="sidebar">
-    <div class="brand">
-      <img src="icon.svg" alt="" width="28" height="28">
+    <a class="brand" href="#/home">
+      <img src="icon.svg" alt="" width="30" height="30">
       <span>Archivio</span>
-    </div>
-    <nav class="nav">
-      <button class="nav-btn" data-go="report">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z M14 2v6h6 M9 13h8 M9 17h8"/></svg>
-        <span>Report</span>
-      </button>
-      <button class="nav-btn" data-go="idea">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6 M10 22h4 M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
-        <span>Idee</span>
-      </button>
-      <button class="nav-btn" data-go="settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-        <span>Impostazioni</span>
-      </button>
+    </a>
+
+    <button class="btn primary new-btn" data-action="new-menu">
+      <svg><use href="#i-plus"/></svg><span>Nuovo</span>
+    </button>
+
+    <nav class="side-nav">
+      <a href="#/home" data-nav="home"><svg><use href="#i-home"/></svg><span>Home</span></a>
+      <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span><em data-count="report"></em></a>
+      <div class="side-sub" id="side-cats"></div>
+      <a href="#/idee" data-nav="idee"><svg><use href="#i-bulb"/></svg><span>Idee di business</span><em data-count="idea"></em></a>
     </nav>
-    <div class="sync" id="sync" role="status" aria-live="polite">
-      <span class="dot"></span><span class="sync-text">…</span>
+
+    <div class="side-foot">
+      <a href="#/impostazioni" data-nav="impostazioni"><svg><use href="#i-gear"/></svg><span>Impostazioni</span></a>
+      <div class="sync" data-sync><i></i><span></span></div>
     </div>
   </aside>
 
-  <!-- LISTA -->
-  <section class="pane list-pane" id="list-pane">
-    <header class="pane-head">
-      <h1 id="list-title">Report</h1>
-      <button class="btn primary" id="btn-new">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
-        <span>Nuovo</span>
-      </button>
-    </header>
-    <div class="list-tools">
-      <input type="search" id="search" placeholder="Cerca per titolo, testo, tag…" autocomplete="off">
-      <div class="chips" id="filters"></div>
-    </div>
-    <ul class="list" id="list"></ul>
-    <div class="empty" id="list-empty" hidden></div>
-  </section>
+  <!-- ============ CONTENUTO ============ -->
+  <main class="main">
 
-  <!-- EDITOR -->
-  <section class="pane editor-pane" id="editor-pane">
-    <div class="editor-empty" id="editor-empty">
-      <p>Seleziona un elemento dalla lista<br>oppure creane uno nuovo.</p>
-    </div>
-    <div class="editor" id="editor" hidden>
-      <header class="editor-bar">
-        <button class="btn ghost back" id="btn-back" aria-label="Torna alla lista">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-          <span>Lista</span>
-        </button>
-        <span class="saved-at" id="saved-at"></span>
-        <button class="btn ghost danger" id="btn-delete" aria-label="Elimina">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"/></svg>
-        </button>
+    <!-- HOME -->
+    <section class="view" id="view-home" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <header class="hero">
+        <p class="eyebrow" id="home-date"></p>
+        <h1 id="home-greeting">Ciao</h1>
+        <p class="lead">Cosa vuoi scrivere oggi?</p>
       </header>
 
-      <div class="editor-body">
-        <textarea id="f-title" class="title-input" rows="1" placeholder="Titolo"></textarea>
-
-        <div class="meta">
-          <label class="field">
-            <span id="l-kind">Tipo</span>
-            <select id="f-kind"></select>
-          </label>
-          <label class="field">
-            <span>Data</span>
-            <input type="date" id="f-date">
-          </label>
-          <label class="field wide">
-            <span id="l-who">Cliente / progetto</span>
-            <input type="text" id="f-who" autocomplete="off">
-          </label>
-          <label class="field full">
-            <span>Tag <small>(separati da virgola)</small></span>
-            <input type="text" id="f-tags" autocomplete="off" placeholder="es. strategia, marketing">
-          </label>
-        </div>
-
-        <textarea id="f-body" class="body-input" placeholder="Scrivi qui…"></textarea>
+      <div class="connect-banner" id="home-connect" hidden>
+        <svg><use href="#i-cloud"/></svg>
+        <div><strong>Sincronizza PC e telefono</strong><span>Per ora i contenuti sono salvati solo su questo dispositivo.</span></div>
+        <a class="btn" href="#/impostazioni">Collega</a>
       </div>
+
+      <div class="quick">
+        <button class="quick-card" data-action="new" data-section="report">
+          <span class="quick-icon"><svg><use href="#i-doc"/></svg></span>
+          <span class="quick-text"><strong>Nuovo report</strong><span>Consulenza, lavoro, studio o ricerca</span></span>
+          <svg class="quick-arrow"><use href="#i-arrow"/></svg>
+        </button>
+        <button class="quick-card" data-action="new" data-section="idea">
+          <span class="quick-icon idea"><svg><use href="#i-bulb"/></svg></span>
+          <span class="quick-text"><strong>Nuova idea di business</strong><span>Annota subito, sviluppala dopo</span></span>
+          <svg class="quick-arrow"><use href="#i-arrow"/></svg>
+        </button>
+      </div>
+
+      <div class="stats" id="home-stats"></div>
+
+      <div class="home-grid">
+        <section class="panel">
+          <header class="panel-head"><h2>Continua a scrivere</h2><a href="#/report">Tutti i report</a></header>
+          <div class="recent" id="home-recent"></div>
+        </section>
+        <section class="panel">
+          <header class="panel-head"><h2>Idee in movimento</h2><a href="#/idee">Bacheca</a></header>
+          <div class="recent" id="home-ideas"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- REPORT -->
+    <section class="view" id="view-report" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow">Archivio</p>
+          <h1>Report</h1>
+        </div>
+        <button class="btn primary hide-phone" data-action="new" data-section="report"><svg><use href="#i-plus"/></svg><span>Nuovo report</span></button>
+      </header>
+      <div class="filters">
+        <div class="segmented" id="report-cats" role="tablist"></div>
+        <div class="filters-right">
+          <label class="search"><svg><use href="#i-search"/></svg><input type="search" id="report-search" placeholder="Cerca nei report" autocomplete="off"></label>
+          <select class="select" id="report-sort" aria-label="Ordina">
+            <option value="updated">Ultima modifica</option>
+            <option value="date">Data del report</option>
+            <option value="title">Titolo A–Z</option>
+          </select>
+        </div>
+      </div>
+      <div class="doc-grid" id="report-grid"></div>
+    </section>
+
+    <!-- IDEE -->
+    <section class="view" id="view-idee" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow">Bacheca</p>
+          <h1>Idee di business</h1>
+        </div>
+        <div class="head-actions">
+          <label class="search"><svg><use href="#i-search"/></svg><input type="search" id="idea-search" placeholder="Cerca nelle idee" autocomplete="off"></label>
+          <button class="btn primary hide-phone" data-action="new" data-section="idea"><svg><use href="#i-plus"/></svg><span>Nuova idea</span></button>
+        </div>
+      </header>
+      <div class="board-tabs" id="board-tabs"></div>
+      <div class="board" id="idea-board"></div>
+    </section>
+
+    <!-- IMPOSTAZIONI -->
+    <section class="view" id="view-impostazioni" hidden>
+      <div class="mobile-top"><span class="brand-sm"><img src="icon.svg" alt="" width="26" height="26">Archivio</span><div class="sync" data-sync><i></i><span></span></div></div>
+      <header class="view-head">
+        <div>
+          <p class="eyebrow">Preferenze</p>
+          <h1>Impostazioni</h1>
+        </div>
+      </header>
+
+      <div class="settings">
+        <section class="set-card">
+          <div class="set-icon"><svg><use href="#i-cloud"/></svg></div>
+          <div class="set-body">
+            <h2>Sincronizzazione</h2>
+            <p class="hint">Ogni modifica si salva subito sul dispositivo e, dopo un paio di secondi, nel tuo repository GitHub privato. Così ritrovi tutto su PC e telefono.</p>
+            <div class="set-status" data-sync-detail></div>
+            <div class="form">
+              <label class="field"><span>Utente GitHub</span><input id="c-owner" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+              <label class="field"><span>Repository dati</span><input id="c-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+              <label class="field full"><span>Token di accesso</span><input id="c-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
+            </div>
+            <div class="row">
+              <button class="btn primary" data-action="connect">Salva e collega</button>
+              <button class="btn ghost" data-action="disconnect">Scollega dispositivo</button>
+            </div>
+            <p class="result" id="connect-result"></p>
+            <details class="howto">
+              <summary>Come creare il token</summary>
+              <ol>
+                <li>Apri <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → nuovo token fine-grained</a>.</li>
+                <li>Nome <b>Archivio</b>, scadenza a scelta.</li>
+                <li><b>Repository access</b> → <i>Only select repositories</i> → <b>lavoro-dati</b>.</li>
+                <li><b>Permissions</b> → <i>Contents</i> → <b>Read and write</b>.</li>
+                <li><b>Generate token</b>, copialo e incollalo qui sopra.</li>
+              </ol>
+            </details>
+          </div>
+        </section>
+
+        <section class="set-card">
+          <div class="set-icon"><svg><use href="#i-phone"/></svg></div>
+          <div class="set-body">
+            <h2>Collega il telefono</h2>
+            <p class="hint">Con il PC già collegato, inquadra il codice con la fotocamera del telefono. Poi dal browser scegli “Aggiungi a schermata Home”.</p>
+            <button class="btn" data-action="qr">Mostra codice QR</button>
+            <div class="qr" id="qr" hidden>
+              <div id="qr-img"></div>
+              <div>
+                <p class="warn">Il codice contiene il tuo token: non mostrarlo ad altri.</p>
+                <button class="btn ghost" data-action="copy-link"><svg><use href="#i-copy"/></svg>Copia link</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="set-card">
+          <div class="set-icon"><svg><use href="#i-palette"/></svg></div>
+          <div class="set-body">
+            <h2>Aspetto</h2>
+            <p class="hint">Tema dell'interfaccia su questo dispositivo.</p>
+            <div class="segmented" id="theme-seg">
+              <button data-theme-set="auto">Automatico</button>
+              <button data-theme-set="light">Chiaro</button>
+              <button data-theme-set="dark">Scuro</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="set-card">
+          <div class="set-icon"><svg><use href="#i-download"/></svg></div>
+          <div class="set-body">
+            <h2>Backup</h2>
+            <p class="hint">La cronologia completa è su GitHub. Puoi anche scaricare una copia di tutto in un file.</p>
+            <div class="row">
+              <button class="btn" data-action="export-backup">Scarica backup</button>
+              <label class="btn file-btn">Importa backup<input type="file" id="f-import" accept="application/json,.json"></label>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ TAB BAR (telefono) ============ -->
+<nav class="tabbar">
+  <a href="#/home" data-nav="home"><svg><use href="#i-home"/></svg><span>Home</span></a>
+  <a href="#/report" data-nav="report"><svg><use href="#i-doc"/></svg><span>Report</span></a>
+  <button class="fab" data-action="new-menu" aria-label="Nuovo"><svg><use href="#i-plus"/></svg></button>
+  <a href="#/idee" data-nav="idee"><svg><use href="#i-bulb"/></svg><span>Idee</span></a>
+  <a href="#/impostazioni" data-nav="impostazioni"><svg><use href="#i-gear"/></svg><span>Altro</span></a>
+</nav>
+
+<!-- ============ EDITOR ============ -->
+<div class="writer" id="writer" hidden>
+  <header class="w-top">
+    <button class="icon-btn" data-action="close-writer" aria-label="Indietro"><svg><use href="#i-back"/></svg></button>
+    <div class="w-crumb"><span id="w-section">Report</span><span class="sep">/</span><span id="w-crumb-title">Senza titolo</span></div>
+    <div class="w-save" data-sync><i></i><span></span></div>
+    <div class="w-actions">
+      <button class="icon-btn text" data-action="typo-menu" aria-label="Aspetto del testo" title="Aspetto del testo">Aa</button>
+      <button class="icon-btn hide-phone" data-action="focus" aria-label="Modalità concentrazione" title="Modalità concentrazione (Esc per uscire)"><svg><use href="#i-focus"/></svg></button>
+      <button class="icon-btn" data-action="panel" aria-label="Dettagli" title="Dettagli"><svg><use href="#i-panel"/></svg></button>
+      <button class="icon-btn" data-action="more-menu" aria-label="Altre azioni" title="Esporta ed altre azioni"><svg><use href="#i-more"/></svg></button>
     </div>
-  </section>
+  </header>
 
-  <!-- IMPOSTAZIONI -->
-  <section class="pane settings-pane" id="settings-pane">
-    <header class="pane-head"><h1>Impostazioni</h1></header>
-    <div class="settings">
+  <div class="w-toolbar" id="w-toolbar">
+    <button type="button" class="tb" data-action="undo" title="Annulla (Ctrl+Z)"><svg><use href="#i-undo"/></svg></button>
+    <button type="button" class="tb" data-action="redo" title="Ripeti (Ctrl+Y)"><svg><use href="#i-redo"/></svg></button>
+    <span class="tb-sep"></span>
+    <select class="ql-header tb-select" title="Stile paragrafo">
+      <option selected>Testo</option>
+      <option value="1">Titolo 1</option>
+      <option value="2">Titolo 2</option>
+      <option value="3">Titolo 3</option>
+    </select>
+    <span class="tb-sep"></span>
+    <button type="button" class="tb ql-bold" title="Grassetto (Ctrl+B)"><svg><use href="#i-bold"/></svg></button>
+    <button type="button" class="tb ql-italic" title="Corsivo (Ctrl+I)"><svg><use href="#i-italic"/></svg></button>
+    <button type="button" class="tb ql-underline" title="Sottolineato (Ctrl+U)"><svg><use href="#i-underline"/></svg></button>
+    <button type="button" class="tb ql-strike" title="Barrato"><svg><use href="#i-strike"/></svg></button>
+    <button type="button" class="tb ql-mark" title="Evidenzia"><svg><use href="#i-mark"/></svg></button>
+    <span class="tb-sep"></span>
+    <button type="button" class="tb ql-list" value="bullet" title="Elenco puntato"><svg><use href="#i-ul"/></svg></button>
+    <button type="button" class="tb ql-list" value="ordered" title="Elenco numerato"><svg><use href="#i-ol"/></svg></button>
+    <button type="button" class="tb ql-list" value="unchecked" title="Lista di controllo"><svg><use href="#i-check"/></svg></button>
+    <button type="button" class="tb ql-blockquote" title="Citazione"><svg><use href="#i-quote"/></svg></button>
+    <button type="button" class="tb ql-align" value="center" title="Centra"><svg><use href="#i-center"/></svg></button>
+    <span class="tb-sep"></span>
+    <button type="button" class="tb ql-link" title="Link (Ctrl+K)"><svg><use href="#i-link"/></svg></button>
+    <button type="button" class="tb ql-divider" title="Linea divisoria"><svg><use href="#i-hr"/></svg></button>
+    <button type="button" class="tb ql-clean" title="Rimuovi formattazione"><svg><use href="#i-clean"/></svg></button>
+  </div>
 
-      <div class="card">
-        <h2>Sincronizzazione con GitHub</h2>
-        <p class="hint">I contenuti vengono salvati subito su questo dispositivo e, pochi secondi dopo, nel repository privato indicato qui sotto. Così sono visibili sia dal PC che dal telefono.</p>
-        <div class="form">
-          <label class="field"><span>Utente GitHub</span><input id="c-owner" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-          <label class="field"><span>Repository dati (privato)</span><input id="c-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-          <label class="field full"><span>Token di accesso</span><input id="c-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
-        </div>
-        <div class="row">
-          <button class="btn primary" id="btn-connect">Salva e collega</button>
-          <button class="btn" id="btn-disconnect">Scollega questo dispositivo</button>
-        </div>
-        <p class="result" id="connect-result"></p>
-        <details class="howto">
-          <summary>Come creare il token (una volta sola)</summary>
-          <ol>
-            <li>Apri <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → Fine-grained token</a>.</li>
-            <li>Nome: <b>Archivio</b>. Scadenza: quella che preferisci.</li>
-            <li><b>Repository access</b> → <i>Only select repositories</i> → scegli il repository dati.</li>
-            <li><b>Permissions</b> → <i>Contents</i> → <b>Read and write</b>.</li>
-            <li>Premi <b>Generate token</b>, copialo e incollalo qui sopra.</li>
-          </ol>
-        </details>
-      </div>
-
-      <div class="card">
-        <h2>Collega il telefono</h2>
-        <p class="hint">Dopo aver collegato il PC, inquadra il codice QR con la fotocamera del telefono: il telefono verrà configurato in automatico. Poi, dal browser, usa “Aggiungi a schermata Home”.</p>
-        <button class="btn" id="btn-qr">Mostra codice QR</button>
-        <div class="qr" id="qr" hidden>
-          <div id="qr-img"></div>
-          <p class="warn">Il QR contiene il tuo token: non condividerlo con nessuno.</p>
-          <button class="btn ghost" id="btn-copy-link">Copia link</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Backup</h2>
-        <p class="hint">Oltre alla cronologia completa su GitHub, puoi scaricare una copia di tutto in un file.</p>
-        <div class="row">
-          <button class="btn" id="btn-export">Scarica backup</button>
-          <label class="btn file-btn">Importa backup<input type="file" id="f-import" accept="application/json,.json"></label>
-        </div>
-      </div>
-
+  <div class="w-body">
+    <div class="w-scroll" id="w-scroll">
+      <article class="page" id="page">
+        <button class="page-meta" id="w-meta" data-action="panel" type="button"></button>
+        <textarea id="w-title" class="page-title" rows="1" placeholder="Titolo"></textarea>
+        <div id="w-editor"></div>
+      </article>
     </div>
-  </section>
 
-  <!-- TAB BAR (telefono) -->
-  <nav class="tabbar">
-    <button class="tab" data-go="report">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z M14 2v6h6 M9 13h8 M9 17h8"/></svg>
-      <span>Report</span>
-    </button>
-    <button class="tab" data-go="idea">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6 M10 22h4 M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
-      <span>Idee</span>
-    </button>
-    <button class="tab" data-go="settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6"/></svg>
-      <span>Impostazioni</span>
-    </button>
-  </nav>
+    <aside class="w-panel" id="w-panel" aria-label="Dettagli documento">
+      <header class="w-panel-head">
+        <h3>Dettagli</h3>
+        <button class="icon-btn" data-action="panel" aria-label="Chiudi"><svg><use href="#i-x"/></svg></button>
+      </header>
+      <div class="w-panel-body">
+        <label class="field"><span id="p-kind-label">Tipo</span><select id="p-kind" class="select"></select></label>
+        <label class="field"><span>Data</span><input type="date" id="p-date"></label>
+        <label class="field"><span id="p-who-label">Cliente / progetto</span><input type="text" id="p-who" autocomplete="off"></label>
+        <div class="field">
+          <span>Tag</span>
+          <div class="tag-input" id="p-tags"><input type="text" id="p-tag-new" placeholder="Aggiungi tag…" autocomplete="off" enterkeyhint="done"></div>
+        </div>
 
-  <div class="toast" id="toast" hidden></div>
+        <div class="p-block">
+          <h4>Struttura</h4>
+          <nav class="outline" id="p-outline"></nav>
+        </div>
 
-  <script src="app.js"></script>
+        <div class="p-block">
+          <h4>Statistiche</h4>
+          <dl class="p-stats" id="p-stats"></dl>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="w-status" id="w-status"></footer>
+</div>
+
+<!-- ============ MENU E FOGLI ============ -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="menu sheet" id="menu-new" hidden role="menu">
+  <p class="menu-title">Crea nuovo</p>
+  <button class="menu-item big" data-action="new" data-section="report">
+    <span class="quick-icon"><svg><use href="#i-doc"/></svg></span>
+    <span><strong>Report</strong><small>Consulenza, lavoro, studio, ricerca</small></span>
+  </button>
+  <button class="menu-item big" data-action="new" data-section="idea">
+    <span class="quick-icon idea"><svg><use href="#i-bulb"/></svg></span>
+    <span><strong>Idea di business</strong><small>Problema, soluzione, mercato</small></span>
+  </button>
+</div>
+
+<div class="menu sheet" id="menu-more" hidden role="menu">
+  <p class="menu-title">Documento</p>
+  <button class="menu-item" data-action="export-pdf"><svg><use href="#i-pdf"/></svg><span>Esporta PDF / Stampa</span></button>
+  <button class="menu-item" data-action="export-word"><svg><use href="#i-word"/></svg><span>Esporta in Word</span></button>
+  <button class="menu-item" data-action="duplicate"><svg><use href="#i-copy"/></svg><span>Duplica</span></button>
+  <hr>
+  <button class="menu-item danger" data-action="delete"><svg><use href="#i-trash"/></svg><span>Elimina</span></button>
+</div>
+
+<div class="menu sheet" id="menu-typo" hidden>
+  <p class="menu-title">Aspetto del testo</p>
+  <div class="typo-row">
+    <span>Carattere</span>
+    <div class="segmented small" data-pref="font">
+      <button data-val="serif" style="font-family:var(--serif)">Serif</button>
+      <button data-val="sans" style="font-family:var(--sans)">Sans</button>
+      <button data-val="mono" style="font-family:var(--mono)">Mono</button>
+    </div>
+  </div>
+  <div class="typo-row">
+    <span>Dimensione</span>
+    <div class="segmented small" data-pref="size">
+      <button data-val="s">A</button>
+      <button data-val="m" style="font-size:16px">A</button>
+      <button data-val="l" style="font-size:19px">A</button>
+    </div>
+  </div>
+  <div class="typo-row">
+    <span>Larghezza</span>
+    <div class="segmented small" data-pref="width">
+      <button data-val="narrow">Stretta</button>
+      <button data-val="wide">Ampia</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/quill.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
